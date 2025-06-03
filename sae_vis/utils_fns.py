@@ -1,11 +1,11 @@
 import copy
 import itertools
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import (
     Any,
     Callable,
-    Iterable,
     Literal,
     TypeAlias,
     TypeVar,
@@ -148,9 +148,9 @@ def index_with_buffer(
     if buffer != 0:
         if isinstance(buffer, int):
             buffer = (buffer, -buffer)
-        assert (
-            buffer[1] < 0
-        ), f"Should have negative second buffer entry, found {buffer=}."
+        assert buffer[1] < 0, (
+            f"Should have negative second buffer entry, found {buffer=}."
+        )
         buffer_width = buffer[0] - buffer[1] + 1
         rows = einops.repeat(rows, "k -> k buffer", buffer=buffer_width)
         cols[cols < buffer[0]] = buffer[0]
@@ -228,9 +228,9 @@ def get_decode_html_safe_fn(
     """
 
     def decode_fn(token_id: int | list[int], vocab_type: VocabType) -> str | list[str]:
-        assert (
-            _vocab_dict := vocab_dict[vocab_type]
-        ), f"Error: vocab_type {vocab_type} not found, only types are {vocab_dict.keys()}."
+        assert (_vocab_dict := vocab_dict[vocab_type]), (
+            f"Error: vocab_type {vocab_type} not found, only types are {vocab_dict.keys()}."
+        )
 
         if isinstance(token_id, int):
             str_tok = _vocab_dict.get(token_id, "UNK")
@@ -445,9 +445,9 @@ class TopK:
             return utils.to_numpy(topk.values), utils.to_numpy(topk.indices)
 
         # Get the topk of the tensor, but only computed over the values of the tensor which are nontrivial
-        assert (
-            tensor_mask.shape == tensor.shape[:-1]
-        ), "Error: unexpected shape for tensor mask."
+        assert tensor_mask.shape == tensor.shape[:-1], (
+            "Error: unexpected shape for tensor mask."
+        )
         tensor_nontrivial_values = tensor[tensor_mask]  # shape [rows d]
         k = min(self.k, tensor_nontrivial_values.shape[-1])
         k = self.k
@@ -622,9 +622,9 @@ class FeatureStatistics:
 
         Note, we also deal with the special case where self has no data.
         """
-        assert (
-            self.ranges_and_precisions == other.ranges_and_precisions
-        ), "Error: can't merge two FeatureStatistics objects with different ranges."
+        assert self.ranges_and_precisions == other.ranges_and_precisions, (
+            "Error: can't merge two FeatureStatistics objects with different ranges."
+        )
 
         self.max.extend(other.max)
         self.frac_nonzero.extend(other.frac_nonzero)
@@ -664,10 +664,14 @@ class FeatureStatistics:
         # For efficient storage, we remove the zeros from quantile_data (it may start with zeros). So when converting it
         # back to a tensor, we need to pad it with zeros again.
         n_buckets = len(self.quantiles) - 1
-        quantiles = torch.tensor(self.quantiles).to(values.device)
+        quantiles = torch.tensor(
+            self.quantiles, dtype=torch.float32, device=values.device
+        )
         quantile_data = torch.tensor(
-            [pad_with_zeros(x, n_buckets) for x in self.quantile_data]
-        ).to(values.device)
+            [pad_with_zeros(x, n_buckets) for x in self.quantile_data],
+            dtype=torch.float32,
+            device=values.device,
+        )
 
         values_is_1d = values.ndim == 1
         if values_is_1d:
@@ -717,10 +721,10 @@ if MAIN:
 
     print("When 50% of data is 0, and 50% is Unif[0, 1]")
     for v, q, p in zip(values[0], quantiles[0], precisions[0]):
-        print(f"Value: {v:.3f}, Precision: {p}, Quantile: {q:.{p-2}%}")
+        print(f"Value: {v:.3f}, Precision: {p}, Quantile: {q:.{p - 2}%}")
     print("\nWhen 100% of data is Unif[0, 1]")
     for v, q, p in zip(values[1], quantiles[1], precisions[1]):
-        print(f"Value: {v:.3f}, Precision: {p}, Quantile: {q:.{p-2}%}")
+        print(f"Value: {v:.3f}, Precision: {p}, Quantile: {q:.{p - 2}%}")
 
 
 # %%
@@ -731,9 +735,9 @@ def split_string(
     str1: str,
     str2: str,
 ) -> tuple[str, str]:
-    assert (
-        str1 in input_string and str2 in input_string
-    ), "Error: str1 and str2 must be in input_string"
+    assert str1 in input_string and str2 in input_string, (
+        "Error: str1 and str2 must be in input_string"
+    )
     pattern = f"({re.escape(str1)}.*?){re.escape(str2)}"
     match = re.search(pattern, input_string, flags=re.DOTALL)
     if match:
@@ -953,17 +957,17 @@ class RollingCorrCoef:
         y = y.flatten(end_dim=-2).T
         X, Nx = x.shape
         Y, Ny = y.shape
-        assert (
-            Nx == Ny
-        ), "Error: x and y should have the same size in the last dimension"
+        assert Nx == Ny, (
+            "Error: x and y should have the same size in the last dimension"
+        )
         if self.X is not None:
-            assert (
-                X == self.X
-            ), "Error: updating a corrcoef object with different sized dataset."
+            assert X == self.X, (
+                "Error: updating a corrcoef object with different sized dataset."
+            )
         if self.Y is not None:
-            assert (
-                Y == self.Y
-            ), "Error: updating a corrcoef object with different sized dataset."
+            assert Y == self.Y, (
+                "Error: updating a corrcoef object with different sized dataset."
+            )
         self.X = X
         self.Y = Y
 
@@ -1451,9 +1455,9 @@ def cross_entropy_loss(
     """
     Version of CE loss that works with a target logits tensor, rather than class indices.
     """
-    assert (
-        logits.shape == target_logits.shape
-    ), f"Error: {logits.shape=}, {target_logits.shape=}"
+    assert logits.shape == target_logits.shape, (
+        f"Error: {logits.shape=}, {target_logits.shape=}"
+    )
     target_probs = target_logits.softmax(-1)
     logprobs = logits.log_softmax(-1)
 
